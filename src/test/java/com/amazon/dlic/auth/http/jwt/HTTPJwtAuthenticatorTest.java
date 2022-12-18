@@ -29,7 +29,7 @@ import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
-import org.apache.http.HttpHeaders;
+import org.apache.hc.core5.http.HttpHeaders;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -381,6 +381,19 @@ public class HTTPJwtAuthenticatorTest {
     			Settings.builder().put("signing_key", BaseEncoding.base64().encode(secretKeyBytes)).put("required_issuer", "test_issuer"),
     			Jwts.builder().setSubject("Leonard McCoy").setIssuer("wrong_issuer"));
     	
+        Assert.assertNull(credentials);
+    }
+
+    @Test
+    public void testReadKeyFromFile() throws Exception {
+
+        Settings settings = Settings.builder().put("signing_key_file", "src/test/resources/jwt/sample_pubkey.pem").build();
+
+        HTTPJwtAuthenticator jwtAuth = new HTTPJwtAuthenticator(settings, null);
+        Map<String, String> headers = new HashMap<String, String>();
+
+        AuthCredentials credentials = jwtAuth.extractCredentials(new FakeRestRequest(headers, new HashMap<String, String>()), null);
+
         Assert.assertNull(credentials);
     }
 
