@@ -11,7 +11,9 @@
 
 package com.amazon.dlic.auth.http.jwt;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.AccessController;
 import java.security.Key;
 import java.security.KeyFactory;
@@ -66,14 +68,30 @@ public class HTTPJwtAuthenticator implements HTTPAuthenticator {
         JwtParser _jwtParser = null;
 
         try {
+            String signingKeyFile = settings.get("signing_key_file");
             String signingKey = settings.get("signing_key");
 
-            if(signingKey == null || signingKey.length() == 0) {
-                log.error("signingKey must not be null or empty. JWT authentication will not work");
+            if (signingKeyFile == null || signingKeyFile.length() == 0) {
+                log.warn("signingKeyFile is not specified, either signingKeyFile or signingKey must be specified for JWT to work");
+            }
+            
+            if (signingKey == null || signingKey.length() == 0) {
+                log.warn("signingKey is not specified, either signingKeyFile or signingKey must be specified for JWT to work");
+            }
+
+            if ((signingKeyFile == null || signingKeyFile.length() == 0) &&
+                    (signingKey == null || signingKey.length() == 0)) {
+                log.error("Neither signingKey nor signingKeyFile are not null or empty. JWT authentication will not work");
             } else {
+
+                if (signingKeyFile != null && signingKeyFile.trim().length() > 0) {
+                    // read from file
+                    signingKey = new String(Files.readAllBytes(Paths.get(signingKeyFile)));
+                }
 
                 signingKey = signingKey.replace("-----BEGIN PUBLIC KEY-----\n", "");
                 signingKey = signingKey.replace("-----END PUBLIC KEY-----", "");
+                signingKey = signingKey.replaceAll("\n",""); // remove newlines if they exist from PEM file
 
                 byte[] decoded = Decoders.BASE64.decode(signingKey);
                 Key key = null;
